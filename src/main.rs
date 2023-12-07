@@ -1,12 +1,14 @@
 use std::fs;
 use zip::ZipArchive;
 use std::io;
+use std::time::Instant;
 
 fn main() {
     std::process::exit(real_main());
 }
 
 fn real_main() -> i32 {
+    let now = Instant::now();
     let args: Vec<_> = std::env::args().collect();
     if args.len() != 2 {
         eprintln!("Error");
@@ -53,7 +55,8 @@ fn real_main() -> i32 {
             fs::set_permissions(&outpath, fs::Permissions::from_mode(mode)).unwrap();
         }
     }
-    
+        let elapsed = now.elapsed();
+        println!("{} seconds to finish", elapsed.as_secs());
     }
    2
 
