@@ -6,56 +6,67 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 )
+
 func zipSource(source, target string) error {
-  f,err := os.Create(target)
-  if err != nil {
-    return err
-  }
-  defer f.Close()
-  writer := zip.NewWriter(f)
-  defer writer.Close()
+	startTime := time.Now() // Record the start time
+	defer func() {
+		elapsedTime := time.Since(startTime)
+		log.Printf("Time taken to zip: %v\n", elapsedTime)
+	}()
 
-  return filepath.Walk(source, func(path string,info os.FileInfo,err error) error {
-  if err != nil {
-    return err
-  }
-  header,err := zip.FileInfoHeader(info)
-  if err != nil {
-    return err
-  }
+	f, err := os.Create(target)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	writer := zip.NewWriter(f)
+	defer writer.Close()
 
-  header.Method = zip.Deflate
+	return filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		header, err := zip.FileInfoHeader(info)
+		if err != nil {
+			return err
+		}
 
-  header.Name, err = filepath.Rel(filepath.Dir(source), path) 
-  if err!=nil {
-    return err
-  }
-  if info.IsDir(){
-    header.Name += "/"
-  }
+		header.Method = zip.Deflate
 
-  headerWriter, err := writer.CreateHeader(header)
-  if err!=nil {
-    return err
-  }
+		header.Name, err = filepath.Rel(filepath.Dir(source), path)
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			header.Name += "/"
+		}
 
-  if info.IsDir(){
-    return nil
-  }
-  
-  f,err := os.Open(path)
-  if err != nil {
-    return err
-  }
-  defer f.Close()
-  _,err = io.Copy(headerWriter, f)
-  return err
-}) 
+		headerWriter, err := writer.CreateHeader(header)
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		_, err = io.Copy(headerWriter, f)
+		return err
+	})
 }
-func main(){
-  if err := zipSource("zipped", "zipped.zip"); err != nil {
-    log.Fatal(err)
 
-  }
+func main() {
+	source := "video.mp4"
+	target := "zipped.zip"
+
+	if err := zipSource(source, target); err != nil {
+		log.Fatal(err)
+	}
 }
